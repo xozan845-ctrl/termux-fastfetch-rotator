@@ -2,6 +2,8 @@
 
 Artes ASCII de distros que **rotan en cada `clear`** (y al abrir la terminal) usando [fastfetch](https://github.com/fastfetch-cli/fastfetch) en **Termux**.
 
+![Demo](assets/demo.gif)
+
 Incluye 19 logos: BlackArch, Arch, Debian, Ubuntu, Fedora, Garuda, Kali, Android, Linux Mint, openSUSE, Manjaro, Void, Gentoo, NixOS, EndeavourOS, Parrot, Pop!_OS, MX y Zorin.
 
 ## Instalación
@@ -57,6 +59,19 @@ debian) colors=(--logo-color-1 red --logo-color-2 red) ;;
 
 Se editan en `~/.config/fastfetch/config.jsonc` (CPU, RAM, disco, IP, etc.).
 El disco apunta a `/storage/emulated` porque en Termux `/` es la partición de sistema (read-only).
+
+## Regenerar la demo
+
+El GIF se generó con [asciinema](https://asciinema.org) + [agg](https://github.com/asciinema/agg):
+
+```bash
+pkg install asciinema agg
+asciinema rec --headless --window-size 110x26 --idle-time-limit 2 \
+  -c "bash assets/demo.sh" demo.cast
+agg --theme dracula --font-size 15 --line-height 1.35 demo.cast assets/demo.gif
+```
+
+`assets/demo.sh` simula la apertura de la terminal y cinco `clear` consecutivos.
 
 ## Desinstalar
 
