@@ -11,30 +11,28 @@ rm -f "$HOME/.cache/fastfetch-logo-index"
 type_clear() {
     for ((i = 0; i < ${#1}; i++)); do
         printf '%s' "${1:i:1}"
-        sleep 0.08
+        sleep 0.04
     done
 }
 
 step() {
     printf "$PROMPT"
-    sleep 0.5
+    sleep 0.2
     type_clear "clear"
-    sleep 0.8
+    sleep 0.3
     command clear
     "$ROTATE"
-    sleep 2.2
+    sleep 0.9
 }
 
 clear
 printf '\033[?25l'   # ocultar el cursor en el GIF
 "$ROTATE"
-sleep 2.5
+sleep 1.2
 
-step
-step
 step
 step
 step
 
 printf "$PROMPT"
-sleep 1.5
+sleep 0.6

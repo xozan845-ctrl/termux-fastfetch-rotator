@@ -66,12 +66,13 @@ El GIF se generó con [asciinema](https://asciinema.org) + [agg](https://github.
 
 ```bash
 pkg install asciinema agg
-asciinema rec --headless --window-size 110x26 --idle-time-limit 2 \
+asciinema rec --headless --window-size 110x26 --idle-time-limit 1 \
   -c "bash assets/demo.sh" demo.cast
-agg --theme dracula --font-size 15 --line-height 1.35 demo.cast assets/demo.gif
+agg --theme dracula --font-size 15 --line-height 1.35 \
+  --idle-time-limit 1 --fps-cap 40 --speed 1.3 demo.cast assets/demo.gif
 ```
 
-`assets/demo.sh` simula la apertura de la terminal y cinco `clear` consecutivos.
+`assets/demo.sh` simula la apertura de la terminal y tres `clear` consecutivos.
 
 ## Desinstalar
 
