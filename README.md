@@ -8,7 +8,7 @@ Incluye 19 logos: BlackArch, Arch, Debian, Ubuntu, Fedora, Garuda, Kali, Android
 
 ```bash
 pkg install git -y
-git clone https://github.com/TU_USUARIO/termux-fastfetch-rotator.git
+git clone https://github.com/xozan845-ctrl/termux-fastfetch-rotator.git
 cd termux-fastfetch-rotator
 ./install.sh
 ```
