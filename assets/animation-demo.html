@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>termux-fastfetch-rotator — Animation Demo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f17; color: #c0caf5; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; min-height: 100vh; }
+  h1 { font-size: 1.2rem; margin-bottom: 4px; }
+  .subtitle { font-size: 0.8rem; color: #565f89; margin-bottom: 16px; }
+
+  /* Controls */
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; font-size: 0.78rem; }
+  .controls label { display: flex; align-items: center; gap: 6px; color: #7a7f9a; }
+  .controls select, .controls input[type="range"] { background: #1a1b26; border: 1px solid #333; color: #c0caf5; border-radius: 4px; padding: 3px 6px; font-size: 0.75rem; }
+  .controls input[type="range"] { width: 80px; accent-color: #7aa2f7; }
+  .controls button { background: #7aa2f7; color: #1a1b26; border: none; border-radius: 4px; padding: 5px 14px; font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: opacity 0.15s; }
+  .controls button:hover { opacity: 0.85; }
+  .controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .controls button.secondary { background: #292e42; color: #c0caf5; }
+  .speed-val { font-family: 'Courier New', monospace; min-width: 1.2em; text-align: center; color: #c0caf5; }
+
+  /* Terminal */
+  .term-wrap { background: #1a1b26; border: 1px solid #333; border-radius: 8px; overflow: hidden; width: 100%; max-width: 720px; }
+  .term-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #15161e; border-bottom: 1px solid #333; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+  .term-title { color: #565f89; font-family: monospace; font-size: 10px; margin-left: 6px; }
+  #terminal { font-family: 'Courier New', 'Consolas', 'Liberation Mono', monospace; font-size: 11px; line-height: 1.35; padding: 12px; white-space: pre; overflow-x: auto; min-height: 340px; color: #c0caf5; }
+
+  .cursor-blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .note { font-size: 0.7rem; color: #565f89; font-style: italic; margin-top: 10px; max-width: 720px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>🎨 termux-fastfetch-rotator — Animation Demo</h1>
+<p class="subtitle">Vista previa de la animación de construcción de logos en <code>rotate.sh</code></p>
+
+<div class="controls">
+  <label>
+    Estilo
+    <select id="styleSelect">
+      <option value="line" selected>Línea por línea</option>
+      <option value="char">Carácter por carácter</option>
+    </select>
+  </label>
+  <label>
+    Velocidad
+    <input id="speedSlider" type="range" min="1" max="10" value="5" />
+    <span id="speedLabel" class="speed-val">5</span>
+  </label>
+  <label>
+    Distro
+    <select id="distroSelect"></select>
+  </label>
+  <button id="playBtn">▶ Animar</button>
+  <button id="nextBtn" class="secondary">⏭ Siguiente (clear)</button>
+</div>
+
+<div class="term-wrap">
+  <div class="term-bar">
+    <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+    <span class="term-title">termux@android ~</span>
+  </div>
+  <div id="terminal"></div>
+</div>
+
+<p class="note">Simulación visual — en Termux real los colores se aplican con códigos ANSI y el layout de fastfetch es lado a lado con la info del sistema.</p>
+
+<script>
+const distros = {
+  blackarch: {
+    color: '#c0caf5',
+    logo: [
+      "                   00",
+      "                    11",
+      "                   ====",
+      "                   .//",
+      "                  `o//:",
+      "                 `+o//o:",
+      "                `+oo//oo:",
+      "                -+oo//oo+:",
+      "              `/:-:+//ooo+:",
+      "             `/+++++//+++++:",
+      "            `/++++++//++++++:",
+      "           `/+++ooooo//ooooooo/`",
+      "          ./ooosssso//osssssso+`",
+      "        .oossssso-`//`/ossssss+`",
+      "        -osssssso.  //  :ssssssso.",
+      "       :osssssss/   //   osssso+++.",
+      "      /ossssssss/   //   +ssssooo/-",
+      "    `/ossssso+/:-   //   -:/+osssso+-",
+      "   `+sso+:-`        //       `.-/+oso:",
+      "  `++:.             //            `-/+/",
+      "  .`                /                `/"
+    ]
+  },
+  arch: {
+    color: '#7aa2f7',
+    logo: [
+      "                   -`",
+      "                  .o+`",
+      "                 `ooo/",
+      "                `+oooo:",
+      "               `+oooooo:",
+      "               -+oooooo+:",
+      "             `/:-:++oooo+:",
+      "            `/++++/+++++++:",
+      "           `/++++++++++++++:",
+      "          `/+++ooooooooooooo/`",
+      "         ./ooosssso++osssssso+`",
+      "       .oossssso-````/ossssss+`",
+      "       -osssssso.      :ssssssso.",
+      "      :osssssss/        osssso+++.",
+      "     /ossssssss/        +ssssooo/-",
+      "   `/ossssso+/:-        -:/+osssso+-",
+      "  `+sso+:-`                 `.-/+oso:",
+      " `++:.                           `-/+/",
+      " .`                                 `/"
+    ]
+  },
+  debian: {
+    color: '#f7768e',
+    logo: [
+      "         _,met$$$$$gg.",
+      "      ,g$$$$$$$$$$$$$$$P.",
+      '    ,g$$P""       """Y$$.".\'',
+      "   ,$$P'              `$$$.",
+      " ',$$P       ,ggs.     `$$b:",
+      " `d$$'     ,$P\"'   .    $$$$",
+      "  $$P      d$'     ,    $$$P",
+      "  $$:      $$$.   -    ,d$$'",
+      "  $$;      Y$b._   _,d$P'",
+      '  Y$$$.    `.`"Y$$$$P"\'',
+      '  `$$$$b      "-.__',
+      "   `Y$$$b",
+      "    `Y$$.",
+      "      `$$b.",
+      "        `Y$$b.",
+      '          `"Y$b._',
+      '              `""""'
+    ]
+  },
+  ubuntu: {
+    color: '#f7768e',
+    logo: [
+      "              .-/+oossssoo+/-.",
+      "          `:+ssssssssssssssssss+:`",
+      "        -+ssssssssssssssssssyyssss+-",
+      "      .ossssssssssssssssssdMMMNysssso.",
+      "     /ssssssssssshdmmNNmmyNMMMMhssssss/",
+      "    +ssssssssshmydMMMMMMMNddddyssssssss+",
+      "   /ssssssshNMMMyhhyyyyhmNMMMNhssssssssss/",
+      "  .ssssssssdMMMNhsssssssssshNMMMdssssssss.",
+      "  +sssshhhyNMMNyssssssssssssyNMMMysssssss+",
+      "  osssssNMMMNyNMMNhsssssssssshmmmhssssssso",
+      "  osssssNMMMNyssssssssssssssssssssssssssso",
+      "  osssssNMMMNyNMMNhsssssssssshmmmhssssssso",
+      "  +sssshhhyNMMNyssssssssssssyNMMMysssssss+",
+      "  .ssssssssdMMMNhsssssssssshNMMMdssssssss.",
+      "   /ssssssshNMMMyhhyyyyhmNMMMNhssssssssss/",
+      "    +ssssssssshmydMMMMMMMNddddyssssssss+",
+      "     /ssssssssssshdmNNNNmyNMMMMhssssss/",
+      "      .ossssssssssssssssssdMMMNysssso.",
+      "        -+sssssssssssssssssyyyssss+-",
+      "          `:+ssssssssssssssssss+:`",
+      "              .-/+oossssoo+/-."
+    ]
+  },
+  kali: {
+    color: '#7aa2f7',
+    logo: [
+      " ..............",
+      "             ..,;:ccc,.",
+      "           ......''';lxO.",
+      " .....''''..........,:ld;",
+      "            .';;;:::;,,.x,",
+      "       ..'''.            0Xxoc:,.  ...",
+      "   ....                ,ONkc;,;cokOdc',.",
+      "  .                   OMo           ':ddo.",
+      "                     dMc               :OO;",
+      "                     0M.                 .:o.",
+      "                     ;Wd",
+      "                      ;XO,",
+      "                        ,d0Odlc;,..",
+      "                            ..',;:cdOOd::,.",
+      "                                     .:d;.':;.",
+      "                                        'd,  .'",
+      "                                          ;l   ..",
+      "                                           .o",
+      "                                             c",
+      "                                             .'",
+      "                                              ."
+    ]
+  },
+  fedora: {
+    color: '#7aa2f7',
+    logo: [
+      "             .',;::::;,'.",
+      "         .';:cccccccccccc:;,.",
+      "      .;cccccccccccccccccccccc;.",
+      "    .:cccccccccccccccccccccccccc:.",
+      "  .;ccccccccccccc;.:dddl:;ccccccc:.",
+      " .:ccccccccccccc;OWMKOOXMWd;ccccccc:.",
+      ".:ccccccccccccc;KMMc;cc;xMMc;ccccccc:.",
+      ",cccccccccccccc;MMM.;cc;;MM:;cccccccccc,",
+      ":cccccccccccccc;MMM.;cc;;MM:;ccccccccc:",
+      ":ccccccc;oxOOOo;MMM0OOk.mMd;ccccccccc:",
+      "cccccc;0MMMWWMWMMMMMMMWmMN;cccccccccc;",
+      "ccccc;XMN:;0MMMMMMMMMMMx:;cccccccccc;",
+      "ccccc;MMo;;;;;;;;;;MMMo;;ccccccccc;",
+      "ccccc;0MMMMMMMMMMMXc;;ccccccccc;",
+      "ccccc;;:;cccccccccccccccccccccc;.",
+      ":ccccccccccccccccccccccccccccc:.",
+      " .:ccccccccccccccccccccccccc:.",
+      "   .:ccccccccccccccccccccc:.",
+      "     .':cccccccccccccc:'.",
+      "          '::ccccc::'."
+    ]
+  },
+  garuda: {
+    color: '#bb9af7',
+    logo: [
+      "                   .%;888:8898898:",
+      "                 x;XW;W:88W88",
+      "               .xX88888:8:88888.",
+      "              .dX  . ::::.    ;88",
+      "             .tX  .::::::::.    :",
+      "            oW  .:::::::::::.   :",
+      "           tW  .:::::::::::::  :",
+      "          tW  .:::::::::::::: .:",
+      "         tX  .:::::::::::::: .:",
+      "        oW  .::::::::::::::  :",
+      "       oX  .:::::::::::::  .:",
+      "      t8  .::::::::::::.  .:",
+      "     dX  .::::::::::::  .:",
+      "    dX  .:::::::::::  .:",
+      "   d8  .::::::::::  .:",
+      "  d8  .:::::::::.  .:",
+      " d8  .:::::::::  .:",
+      " W  .::::::::  .:",
+      " @  .::::::   .:.",
+      "    .:::::   .:."
+    ]
+  },
+  parrot: {
+    color: '#7dcfff',
+    logo: [
+      "   `:oho/-`",
+      " `mMMMMMMMMMMMNmmdhy-",
+      "  dMMMMMMMMMMMMMMMMMMs`",
+      "  +MMsohNMMMMMMMMMMMMMm/",
+      "  .My   .+dMMMMMMMMMMMMMh.",
+      "   +       :NMMMMMMMMMMMMNo",
+      "            `yMMMMMMMMMMMMMm:",
+      "              /NMMMMMMMMMMMMMy`",
+      "               .hMMMMMMMMMMMMMN+",
+      "                   ``-NMMMMMMMMMd-",
+      "                      /MMMMMMMMMMMs`",
+      "                       mMMMMMMMsyNMN/",
+      "                       +MMMMMMMo  :sNh.",
+      "                       `NMMMMMMm     -o/",
+      "                        oMMMMMMM.",
+      "                        `NMMMMMM+",
+      "                         +MMd/NMh",
+      "                          mMm -mN`",
+      "                          /MM  `h:",
+      "                           dM`   .",
+      "                           :M-",
+      "                            d:",
+      "                            -+",
+      "                             -"
+    ]
+  },
+  android: {
+    color: '#9ece6a',
+    logo: [
+      "         -o          o-",
+      "          +hydNNNNdyh+",
+      "        +mMMMMMMMMMMMMm+",
+      "      `dMM.----------.MMb`",
+      "      hMMMMMMMMMMMMMMMMMMh",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      oMMMMMMMMMMMMMMMMMMo",
+      "      `HMMMMMMMMMMMMMMMdH'",
+      "       `db.        .bd`",
+      "        .9m+------+m9.",
+      "            ^^^^^^"
+    ]
+  },
+  manjaro: {
+    color: '#9ece6a',
+    logo: [
+      " ██████████████████  ████████",
+      " ██████████████████  ████████",
+      " ██████████████████  ████████",
+      " ██████████████████  ████████",
+      " ████████            ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████",
+      " ████████  ████████  ████████"
+    ]
+  }
+};
+
+const sysinfo = [
+  '<span style="color:#9ece6a;font-weight:bold">user</span>@<span style="color:#9ece6a;font-weight:bold">localhost</span>',
+  '<span style="color:#565f89">────────────────────</span>',
+  '<span style="color:#9ece6a;font-weight:bold">OS</span>        Android 14 aarch64',
+  '<span style="color:#9ece6a;font-weight:bold">Kernel</span>    6.1.75-android14',
+  '<span style="color:#9ece6a;font-weight:bold">Uptime</span>    3 hours, 42 mins',
+  '<span style="color:#9ece6a;font-weight:bold">Packages</span>  187 (pkg)',
+  '<span style="color:#9ece6a;font-weight:bold">Shell</span>     bash 5.2.26',
+  '<span style="color:#9ece6a;font-weight:bold">Terminal</span>  Termux',
+  '',
+  '<span style="color:#7dcfff;font-weight:bold">CPU</span>       Snapdragon 8 Gen 2',
+  '<span style="color:#7dcfff;font-weight:bold">GPU</span>       Adreno 740',
+  '<span style="color:#7dcfff;font-weight:bold">RAM</span>       4.2 GiB / 11.4 GiB',
+  '<span style="color:#7dcfff;font-weight:bold">Disk</span>      98 GiB / 128 GiB',
+  '',
+  '<span style="color:#e0af68;font-weight:bold">IP</span>        192.168.1.42',
+  '<span style="color:#e0af68;font-weight:bold">Colors</span>    <span style="color:#f7768e">███</span><span style="color:#ff9e64">███</span><span style="color:#e0af68">███</span><span style="color:#9ece6a">███</span><span style="color:#7dcfff">███</span><span style="color:#7aa2f7">███</span><span style="color:#bb9af7">███</span><span style="color:#c0caf5">███</span>'
+];
+
+let currentDistroIdx = 0;
+const distroNames = Object.keys(distros);
+let animating = false;
+
+const terminal = document.getElementById('terminal');
+const playBtn = document.getElementById('playBtn');
+const nextBtn = document.getElementById('nextBtn');
+const styleSelect = document.getElementById('styleSelect');
+const speedSlider = document.getElementById('speedSlider');
+const speedLabel = document.getElementById('speedLabel');
+const distroSelect = document.getElementById('distroSelect');
+
+distroNames.forEach((name, i) => {
+  const opt = document.createElement('option');
+  opt.value = i;
+  opt.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  distroSelect.appendChild(opt);
+});
+
+speedSlider.addEventListener('input', () => { speedLabel.textContent = speedSlider.value; });
+
+function getDelay() {
+  const speed = parseInt(speedSlider.value);
+  return styleSelect.value === 'char'
+    ? Math.max(1, 12 - speed)
+    : Math.max(10, 120 - speed * 12);
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function composeFull(distroName) {
+  const d = distros[distroName];
+  const logoLines = d.logo;
+  const maxLogoW = Math.max(...logoLines.map(l => l.length));
+  const totalLines = Math.max(logoLines.length, sysinfo.length);
+  const composed = [];
+  for (let i = 0; i < totalLines; i++) {
+    const rawLogo = i < logoLines.length ? logoLines[i] : '';
+    const padded = rawLogo + ' '.repeat(Math.max(0, maxLogoW - rawLogo.length));
+    const info = i < sysinfo.length ? sysinfo[i] : '';
+    composed.push({ logoHtml: `<span style="color:${d.color}">${escapeHtml(padded)}</span>`, infoHtml: info, rawLogo: padded, color: d.color });
+  }
+  return composed;
+}
+
+async function animateLine(distroName) {
+  if (animating) return;
+  animating = true;
+  setButtons(true);
+  const composed = composeFull(distroName);
+  const delay = getDelay();
+  terminal.innerHTML = '';
+  for (const { logoHtml, infoHtml } of composed) {
+    terminal.innerHTML += logoHtml + '    ' + infoHtml + '\n';
+    terminal.scrollTop = terminal.scrollHeight;
+    await sleep(delay);
+  }
+  await sleep(200);
+  appendPrompt();
+  animating = false;
+  setButtons(false);
+}
+
+async function animateChar(distroName) {
+  if (animating) return;
+  animating = true;
+  setButtons(true);
+  const composed = composeFull(distroName);
+  const delay = getDelay();
+  terminal.innerHTML = '';
+  for (let i = 0; i < composed.length; i++) {
+    const { rawLogo, infoHtml, color } = composed[i];
+    const lineId = `line-${i}`;
+    terminal.innerHTML += `<span id="${lineId}"></span>\n`;
+    const lineEl = document.getElementById(lineId);
+    for (let j = 0; j < rawLogo.length; j++) {
+      lineEl.innerHTML = `<span style="color:${color}">${escapeHtml(rawLogo.substring(0, j + 1))}</span>`;
+      await sleep(delay);
+    }
+    lineEl.innerHTML = `<span style="color:${color}">${escapeHtml(rawLogo)}</span>    ${infoHtml}`;
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+  await sleep(200);
+  appendPrompt();
+  animating = false;
+  setButtons(false);
+}
+
+function appendPrompt() {
+  terminal.innerHTML += '\n<span style="color:#9ece6a;font-weight:bold">termux</span>:<span style="color:#7aa2f7;font-weight:bold">~</span>$ <span class="cursor-blink">█</span>';
+}
+
+function setButtons(disabled) {
+  playBtn.disabled = disabled;
+  nextBtn.disabled = disabled;
+  playBtn.textContent = disabled ? '⏳ Animando...' : '▶ Animar';
+}
+
+async function runAnimation() {
+  const idx = parseInt(distroSelect.value);
+  currentDistroIdx = idx;
+  (styleSelect.value === 'char' ? animateChar : animateLine)(distroNames[idx]);
+}
+
+async function nextDistro() {
+  if (animating) return;
+  animating = true;
+  terminal.innerHTML += '\n<span style="color:#9ece6a;font-weight:bold">termux</span>:<span style="color:#7aa2f7;font-weight:bold">~</span>$ ';
+  const span = document.createElement('span');
+  span.style.color = '#c0caf5';
+  terminal.appendChild(span);
+  for (const ch of 'clear') { span.textContent += ch; await sleep(60); }
+  await sleep(300);
+  terminal.innerHTML = '';
+  animating = false;
+  currentDistroIdx = (currentDistroIdx + 1) % distroNames.length;
+  distroSelect.value = currentDistroIdx;
+  runAnimation();
+}
+
+playBtn.addEventListener('click', runAnimation);
+nextBtn.addEventListener('click', nextDistro);
+distroSelect.addEventListener('change', () => { if (!animating) runAnimation(); });
+
+runAnimation();
+</script>
+</body>
+</html>
