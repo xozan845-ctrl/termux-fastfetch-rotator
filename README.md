@@ -55,6 +55,19 @@ Ejemplo:
 debian) colors=(--logo-color-1 red --logo-color-2 red) ;;
 ```
 
+### Animación de construcción
+
+`rotate.sh` incluye un efecto de construcción al mostrar cada arte:
+
+```bash
+ANIM_ENABLED=true        # true = animar | false = instantáneo
+ANIM_STYLE="line"        # "line" = línea por línea | "char" = carácter por carácter
+ANIM_LINE_DELAY=0.03     # velocidad entre líneas (segundos)
+ANIM_CHAR_DELAY=0.004    # velocidad entre caracteres (segundos)
+```
+
+Puedes ver y probar los modos interactivamente en tu navegador con [`assets/animation-demo.html`](assets/animation-demo.html).
+
 ### Módulos de información
 
 Se editan en `~/.config/fastfetch/config.jsonc` (CPU, RAM, disco, IP, etc.).
